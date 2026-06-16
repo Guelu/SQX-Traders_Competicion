@@ -106,11 +106,13 @@ body {
 
 /* ── Brand ──────────────────────────────── */
 .brand {
-  display: flex; align-items: center; gap: 10px;
-  font-weight: 800; letter-spacing: .03em; font-size: 15px;
+  display: flex; align-items: center;
   color: var(--text); text-decoration: none; flex-shrink: 0;
 }
-.brand svg { width: 28px; height: 28px; flex-shrink: 0; display: block; }
+.brand-logo {
+  width: 72px; height: 72px; object-fit: contain;
+  flex-shrink: 0; display: block;
+}
 
 /* ── Loading ────────────────────────────── */
 .loading-screen {
