@@ -239,6 +239,9 @@ a { color: inherit; text-decoration: none; }
 .track-metrics strong {
   font-family: var(--mono); color: var(--text); font-size: 14px;
 }
+.track-metrics strong.pos { color: var(--orange); }
+.track-metrics strong.neg { color: #ff5a52; }
+.track-metrics strong.neutral { color: var(--text); }
 
 @media (max-width: 680px) {
   .about-grid { grid-template-columns: 1fr; text-align: center; }

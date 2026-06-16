@@ -9,6 +9,28 @@ const TRACKRECORD_URL = import.meta.env.VITE_TRACKRECORD_URL || null;
 let currentLang = getStoredLang();
 let lastData    = null;
 
+function staticTrackRecord(lang) {
+  return {
+    ticker: 'PDCL',
+    provider: 'Darwinex Zero',
+    url: 'https://www.darwinexzero.com/darwin/PDCL/assets-timeframes',
+    image_url: '/pdcl-equity.png',
+    updated_at: '2026-06-16T14:04:00Z',
+    return_pct: 44.23,
+    drawdown_pct: -13.01,
+    metric_cards: [
+      { label: t(lang, 'track_return'), value: '+44.23%', tone: 'pos' },
+      { label: t(lang, 'track_annual_return'), value: '+15.36%', tone: 'pos' },
+      { label: t(lang, 'track_drawdown'), value: '-13.01%', tone: 'neg' },
+      { label: t(lang, 'track_sharpe'), value: '1.06', tone: 'pos' },
+      { label: t(lang, 'track_sortino'), value: '1.91', tone: 'pos' },
+      { label: t(lang, 'track_volatility'), value: '14.55%', tone: 'neutral' },
+      { label: t(lang, 'track_cmh'), value: '148.96', tone: 'pos' },
+      { label: t(lang, 'track_return_since_cmh'), value: '-3.18%', tone: 'neg' },
+    ],
+  };
+}
+
 // ── live widget data (best-effort, falls back to static copy) ────────────────
 async function fetchJson(url) {
   if (!url) return null;
@@ -95,14 +117,17 @@ function trackRecordChart(points, lang) {
 }
 
 function trackRecordHtml(track, lang) {
-  const url = track?.url || 'https://www.darwinexzero.com/darwin/PDCL/assets-timeframes';
-  const ticker = track?.ticker || 'PDCL';
-  const provider = track?.provider || 'Darwinex Zero';
-  const hasChart = Boolean(track?.image_url || (Array.isArray(track?.equity_curve) && track.equity_curve.length > 1));
-  const hasMetrics = ['return_pct', 'drawdown_pct', 'track_record_years', 'updated_at'].some(key => track?.[key] != null);
-  const updated = track?.updated_at
-    ? new Date(track.updated_at).toLocaleString(localeFor(lang), { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
-    : t(lang, 'track_updated_pending');
+  const model = { ...staticTrackRecord(lang), ...(track || {}) };
+  const url = model.url;
+  const ticker = model.ticker;
+  const provider = model.provider;
+  const hasChart = Boolean(model.image_url || (Array.isArray(model.equity_curve) && model.equity_curve.length > 1));
+  const metricCards = track?.metric_cards || (track ? [
+    { label: t(lang, 'track_return'), value: fmtMetric(model.return_pct, lang, '%'), tone: Number(model.return_pct) >= 0 ? 'pos' : 'neg' },
+    { label: t(lang, 'track_drawdown'), value: fmtMetric(model.drawdown_pct, lang, '%'), tone: Number(model.drawdown_pct) >= 0 ? 'pos' : 'neg' },
+    { label: t(lang, 'track_years'), value: model.track_record_years != null ? Number(model.track_record_years).toLocaleString(localeFor(lang), { maximumFractionDigits: 1 }) : '—', tone: 'neutral' },
+    { label: t(lang, 'track_updated'), value: model.updated_at ? new Date(model.updated_at).toLocaleString(localeFor(lang), { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : t(lang, 'track_updated_pending'), tone: 'neutral' },
+  ] : model.metric_cards);
 
   return `
     <div class="track-card">
@@ -114,28 +139,17 @@ function trackRecordHtml(track, lang) {
         </div>
         <a href="${url}" target="_blank" rel="noopener" class="track-link">${t(lang, 'track_link')}</a>
       </div>
-      ${track?.image_url ? `
+      ${model.image_url ? `
         <div class="track-image">
-          <img src="${track.image_url}" alt="${t(lang, 'track_chart_aria')}" loading="lazy" />
-        </div>` : trackRecordChart(track?.equity_curve, lang)}
-      ${hasMetrics ? `<div class="track-metrics">
-        <div>
-          <span>${t(lang, 'track_return')}</span>
-          <strong>${fmtMetric(track?.return_pct, lang, '%')}</strong>
-        </div>
-        <div>
-          <span>${t(lang, 'track_drawdown')}</span>
-          <strong>${fmtMetric(track?.drawdown_pct, lang, '%')}</strong>
-        </div>
-        <div>
-          <span>${t(lang, 'track_years')}</span>
-          <strong>${track?.track_record_years != null ? Number(track.track_record_years).toLocaleString(localeFor(lang), { maximumFractionDigits: 1 }) : '—'}</strong>
-        </div>
-        <div>
-          <span>${t(lang, 'track_updated')}</span>
-          <strong>${updated}</strong>
-        </div>
-      </div>` : ''}
+          <img src="${model.image_url}" alt="${t(lang, 'track_chart_aria')}" loading="lazy" />
+        </div>` : trackRecordChart(model.equity_curve, lang)}
+      <div class="track-metrics">
+        ${metricCards.map(metric => `
+          <div>
+            <span>${metric.label}</span>
+            <strong class="${metric.tone || 'neutral'}">${metric.value}</strong>
+          </div>`).join('')}
+      </div>
       ${hasChart ? '' : `<p class="track-note">${t(lang, 'track_connect_note')}</p>`}
     </div>`;
 }
