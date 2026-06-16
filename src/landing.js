@@ -4,20 +4,27 @@ import { t, getStoredLang, localeFor } from './i18n.js';
 import { controlsHtml, bindControls } from './controls.js';
 
 const JSON_URL = import.meta.env.VITE_JSON_URL || null;
+const TRACKRECORD_URL = import.meta.env.VITE_TRACKRECORD_URL || null;
 
 let currentLang = getStoredLang();
 let lastData    = null;
 
 // ── live widget data (best-effort, falls back to static copy) ────────────────
-async function fetchCompetitionSummary() {
-  if (!JSON_URL) return null;
+async function fetchJson(url) {
+  if (!url) return null;
   try {
-    const res = await fetch(JSON_URL);
+    const res = await fetch(url);
     if (!res.ok) return null;
     return await res.json();
   } catch {
     return null;
   }
+}
+
+async function fetchCompetitionSummary() {
+  const data = await fetchJson(JSON_URL);
+  const track = data?.founder_trackrecord || await fetchJson(TRACKRECORD_URL);
+  return data || track ? { ...(data || {}), founder_trackrecord: track || data?.founder_trackrecord } : null;
 }
 
 function formatCountdown(targetMs, lang) {
@@ -105,7 +112,10 @@ function trackRecordHtml(track, lang) {
         </div>
         <a href="${url}" target="_blank" rel="noopener" class="track-link">${t(lang, 'track_link')}</a>
       </div>
-      ${trackRecordChart(track?.equity_curve, lang)}
+      ${track?.image_url ? `
+        <div class="track-image">
+          <img src="${track.image_url}" alt="${t(lang, 'track_chart_aria')}" loading="lazy" />
+        </div>` : trackRecordChart(track?.equity_curve, lang)}
       <div class="track-metrics">
         <div>
           <span>${t(lang, 'track_return')}</span>

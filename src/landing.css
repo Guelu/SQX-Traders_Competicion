@@ -195,6 +195,13 @@ a { color: inherit; text-decoration: none; }
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--radius); overflow: hidden;
 }
+.track-image {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden;
+}
+.track-image img {
+  width: 100%; display: block;
+}
 .track-chart svg {
   width: 100%; aspect-ratio: 16 / 6; display: block;
 }
