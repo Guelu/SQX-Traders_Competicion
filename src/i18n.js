@@ -42,7 +42,8 @@ export const translations = {
     track_years: 'Años',
     track_updated: 'Actualizado',
     track_updated_pending: 'Pendiente',
-    track_chart_pending: 'La gráfica se mostrará aquí cuando el backend publique la curva de equity.',
+    track_chart_pending: 'Fuente automática pendiente',
+    track_connect_note: 'Para mostrar la gráfica real, el backend debe publicar una image_url o una equity_curve de PDCL.',
     track_chart_aria: 'Curva de equity del track record PDCL',
 
     // ── landing: community ───────────────────────────────────────────────
@@ -158,7 +159,8 @@ export const translations = {
     track_years: 'Years',
     track_updated: 'Updated',
     track_updated_pending: 'Pending',
-    track_chart_pending: 'The chart will appear here when the backend publishes the equity curve.',
+    track_chart_pending: 'Automatic source pending',
+    track_connect_note: 'To show the real chart, the backend must publish a PDCL image_url or equity_curve.',
     track_chart_aria: 'PDCL track record equity curve',
 
     community_tag:  'The community',

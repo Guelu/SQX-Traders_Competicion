@@ -95,9 +95,11 @@ function trackRecordChart(points, lang) {
 }
 
 function trackRecordHtml(track, lang) {
-  const url = track?.url || 'https://www.darwinex.com/invest/PDCL';
+  const url = track?.url || 'https://www.darwinexzero.com/darwin/PDCL/assets-timeframes';
   const ticker = track?.ticker || 'PDCL';
   const provider = track?.provider || 'Darwinex Zero';
+  const hasChart = Boolean(track?.image_url || (Array.isArray(track?.equity_curve) && track.equity_curve.length > 1));
+  const hasMetrics = ['return_pct', 'drawdown_pct', 'track_record_years', 'updated_at'].some(key => track?.[key] != null);
   const updated = track?.updated_at
     ? new Date(track.updated_at).toLocaleString(localeFor(lang), { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
     : t(lang, 'track_updated_pending');
@@ -116,7 +118,7 @@ function trackRecordHtml(track, lang) {
         <div class="track-image">
           <img src="${track.image_url}" alt="${t(lang, 'track_chart_aria')}" loading="lazy" />
         </div>` : trackRecordChart(track?.equity_curve, lang)}
-      <div class="track-metrics">
+      ${hasMetrics ? `<div class="track-metrics">
         <div>
           <span>${t(lang, 'track_return')}</span>
           <strong>${fmtMetric(track?.return_pct, lang, '%')}</strong>
@@ -133,7 +135,8 @@ function trackRecordHtml(track, lang) {
           <span>${t(lang, 'track_updated')}</span>
           <strong>${updated}</strong>
         </div>
-      </div>
+      </div>` : ''}
+      ${hasChart ? '' : `<p class="track-note">${t(lang, 'track_connect_note')}</p>`}
     </div>`;
 }
 
