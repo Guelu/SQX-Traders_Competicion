@@ -28,6 +28,105 @@ function formatCountdown(targetMs, lang) {
   return `${d}d ${h}h`;
 }
 
+const fmtMetric = (value, lang, suffix = '') => {
+  if (value == null || !isFinite(Number(value))) return '—';
+  const n = Number(value);
+  const sign = n > 0 ? '+' : '';
+  return `${sign}${n.toLocaleString(localeFor(lang), { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${suffix}`;
+};
+
+function trackPointValue(point) {
+  if (typeof point === 'number') return point;
+  if (point && typeof point === 'object') return Number(point.value ?? point.equity ?? point.balance ?? point.return_pct);
+  return NaN;
+}
+
+function trackDateLabel(point, lang) {
+  const raw = point && typeof point === 'object' ? (point.date || point.time || point.timestamp) : null;
+  if (!raw) return '';
+  return new Date(raw).toLocaleDateString(localeFor(lang), { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function trackRecordChart(points, lang) {
+  const values = (Array.isArray(points) ? points : [])
+    .map(trackPointValue)
+    .filter(v => isFinite(v));
+
+  if (values.length < 2) {
+    return `<div class="track-chart-empty">${t(lang, 'track_chart_pending')}</div>`;
+  }
+
+  const width = 640;
+  const height = 240;
+  const padX = 18;
+  const padY = 20;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const coords = values.map((v, i) => {
+    const x = padX + (i / (values.length - 1)) * (width - padX * 2);
+    const y = height - padY - ((v - min) / range) * (height - padY * 2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  const area = `${padX},${height - padY} ${coords} ${width - padX},${height - padY}`;
+  const last = values.at(-1);
+  const firstLabel = trackDateLabel(points[0], lang);
+  const lastLabel = trackDateLabel(points.at(-1), lang);
+
+  return `
+    <div class="track-chart">
+      <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${t(lang, 'track_chart_aria')}">
+        <polygon points="${area}" class="track-area"></polygon>
+        <polyline points="${coords}" class="track-line"></polyline>
+      </svg>
+      <div class="track-chart-meta">
+        <span>${firstLabel}</span>
+        <strong>${fmtMetric(last, lang)}</strong>
+        <span>${lastLabel}</span>
+      </div>
+    </div>`;
+}
+
+function trackRecordHtml(track, lang) {
+  const url = track?.url || 'https://www.darwinex.com/invest/PDCL';
+  const ticker = track?.ticker || 'PDCL';
+  const provider = track?.provider || 'Darwinex Zero';
+  const updated = track?.updated_at
+    ? new Date(track.updated_at).toLocaleString(localeFor(lang), { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+    : t(lang, 'track_updated_pending');
+
+  return `
+    <div class="track-card">
+      <div class="track-head">
+        <div>
+          <div class="track-kicker">${provider}</div>
+          <h3>${ticker}</h3>
+          <p>${t(lang, 'track_subtitle')}</p>
+        </div>
+        <a href="${url}" target="_blank" rel="noopener" class="track-link">${t(lang, 'track_link')}</a>
+      </div>
+      ${trackRecordChart(track?.equity_curve, lang)}
+      <div class="track-metrics">
+        <div>
+          <span>${t(lang, 'track_return')}</span>
+          <strong>${fmtMetric(track?.return_pct, lang, '%')}</strong>
+        </div>
+        <div>
+          <span>${t(lang, 'track_drawdown')}</span>
+          <strong>${fmtMetric(track?.drawdown_pct, lang, '%')}</strong>
+        </div>
+        <div>
+          <span>${t(lang, 'track_years')}</span>
+          <strong>${track?.track_record_years != null ? Number(track.track_record_years).toLocaleString(localeFor(lang), { maximumFractionDigits: 1 }) : '—'}</strong>
+        </div>
+        <div>
+          <span>${t(lang, 'track_updated')}</span>
+          <strong>${updated}</strong>
+        </div>
+      </div>
+    </div>`;
+}
+
 function liveWidgetHtml(data, lang) {
   if (!data) {
     return `
@@ -146,6 +245,7 @@ function render(data, lang) {
           </a>
         </div>
       </div>
+      ${trackRecordHtml(data?.founder_trackrecord, lang)}
     </section>
 
     <section class="section" id="comunidad">
