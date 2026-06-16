@@ -24,9 +24,18 @@ const fmtProfit  = (v, lang) => v >= 0 ? `+$${es2(v, lang)}` : `-$${es2(v, lang)
 const fmtScore   = (v, lang) => isFinite(v) ? v.toLocaleString(localeFor(lang), { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—';
 const fmtPF      = (v, lang) => (v == null || !isFinite(v)) ? '—' : v.toLocaleString(localeFor(lang), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtWin     = (v) => `${v.toFixed(1)}%`;
+const fmtLots    = (v, lang) => Number(v || 0).toLocaleString(localeFor(lang), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+function moneyClass(v) {
+  return v >= 0 ? 'pos' : 'neg';
+}
 
 function dateFmt(d, lang) {
   return new Date(d + 'T12:00:00').toLocaleDateString(localeFor(lang), { day:'2-digit', month:'short', year:'numeric' });
+}
+
+function dateTimeFmt(d, lang) {
+  return new Date(d).toLocaleString(localeFor(lang), { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
 }
 
 // ── countdowns ────────────────────────────────────────────────────────────────
@@ -158,7 +167,7 @@ function buildPodiumCard(r, position, lang) {
 
 // ── table row (from rank 4 onwards) ──────────────────────────────────────────
 function buildRow(r, lang) {
-  const profitCls = r.profit >= 0 ? 'pos' : 'neg';
+  const profitCls = moneyClass(r.profit);
   const scoreCls  = r.score_rdd >= 0 ? 'pos' : 'neg';
   const maxDdCls  = r.max_drawdown < 0 ? 'neg' : 'neutral';
   const pfCls     = (r.profit_factor != null && isFinite(r.profit_factor))
@@ -195,6 +204,56 @@ function buildRow(r, lang) {
       <td class="right mono">${r.trades}</td>
       <td>${badge}</td>
     </tr>`;
+}
+
+function buildOpenTradeRow(trade, lang) {
+  const profit = Number(trade.profit || 0);
+  const swap = Number(trade.swap || 0);
+  const commission = Number(trade.commission || 0);
+  const total = Number(trade.total || 0);
+
+  return `
+    <tr>
+      <td>
+        <div>
+          <div class="name-main">${trade.participant_name || '—'}</div>
+          <div class="name-sub">${trade.comment || '—'}</div>
+        </div>
+      </td>
+      <td class="mono">${trade.symbol || '—'}</td>
+      <td class="mono">${trade.open_time ? dateTimeFmt(trade.open_time, lang) : '—'}</td>
+      <td class="right mono">${fmtLots(trade.lots, lang)}</td>
+      <td class="right ${moneyClass(profit)}">${fmtProfit(profit, lang)}</td>
+      <td class="right ${moneyClass(swap)}">${fmtProfit(swap, lang)}</td>
+      <td class="right ${moneyClass(commission)}">${fmtProfit(commission, lang)}</td>
+      <td class="right ${moneyClass(total)}">${fmtProfit(total, lang)}</td>
+    </tr>`;
+}
+
+function buildOpenTradesSection(openTrades, lang) {
+  const trades = Array.isArray(openTrades) ? openTrades : [];
+
+  return `
+    <div class="section-hd" style="margin-top:32px"><h2>${t(lang, 'section_open_trades')}</h2></div>
+    <div class="table-card">
+      ${trades.length ? `
+        <div class="table-scroll">
+          <table>
+            <thead><tr>
+              <th>${t(lang, 'th_participant')}</th>
+              <th>${t(lang, 'th_symbol')}</th>
+              <th>${t(lang, 'th_opened')}</th>
+              <th class="right">${t(lang, 'th_lots')}</th>
+              <th class="right">${t(lang, 'th_profit')}</th>
+              <th class="right">${t(lang, 'th_swap')}</th>
+              <th class="right">${t(lang, 'th_commission')}</th>
+              <th class="right">${t(lang, 'th_total')}</th>
+            </tr></thead>
+            <tbody>${trades.map(trade => buildOpenTradeRow(trade, lang)).join('')}</tbody>
+          </table>
+        </div>` : `
+        <div class="empty-state">${t(lang, 'open_trades_empty')}</div>`}
+    </div>`;
 }
 
 // ── loading / error screens ─────────────────────────────────────────────────
@@ -295,8 +354,10 @@ function render(data, lang) {
         ${buildPodiumCard(p3, 3, lang)}
       </div>` : ''}
 
+      ${buildOpenTradesSection(data.open_trades, lang)}
+
       ${hasTableContent ? `
-      <div class="section-hd" style="margin-top:32px"><h2>${t(lang, 'section_table')}</h2></div>
+      <div class="section-hd"><h2>${t(lang, 'section_table')}</h2></div>
       <div class="table-card">
         <div class="table-scroll">
           <table>

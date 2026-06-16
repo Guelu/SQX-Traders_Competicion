@@ -292,6 +292,13 @@ tbody td.mono  { font-family: var(--mono); }
   padding: 2px 7px; color: var(--text); font-size: 11px;
 }
 
+.empty-state {
+  padding: 30px 20px;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
 /* ── Pódium ─────────────────────────────── */
 .podium-wrap {
   display: flex; align-items: flex-end; justify-content: center;
